@@ -12,7 +12,6 @@ const app = express();
 const port = process.env.PORT || 3000;
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const contentDir = path.join(appDir, "course-content");
-const accessTokens = new Map();
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
 const hasSupabaseConfig = Boolean(process.env.SUPABASE_URL && supabaseKey);
 const hasRazorpayCredentials = Boolean(
@@ -76,21 +75,24 @@ app.get("/api/supabase-connection", async (_req, res) => {
   res.json({ connected: true });
 });
 
-function validAccessToken(token) {
-  const expiresAt = accessTokens.get(token);
-  if (!expiresAt || expiresAt < Date.now()) {
-    accessTokens.delete(token);
-    return false;
-  }
-  return true;
-}
-
 function getAccessToken(req) {
   const cookie = (req.get("cookie") || "")
     .split(";")
     .map((part) => part.trim())
     .find((part) => part.startsWith("course_access="));
   return cookie ? cookie.slice("course_access=".length) : "";
+}
+
+async function isGitLfsPointer(filePath) {
+  const handle = await fs.open(filePath, "r");
+  try {
+    const buffer = Buffer.alloc(256);
+    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+    return buffer.subarray(0, bytesRead).toString("utf8")
+      .startsWith("version https://git-lfs.github.com/spec/v1\n");
+  } finally {
+    await handle.close();
+  }
 }
 
 async function hasPaidPurchase(token) {
@@ -111,7 +113,7 @@ async function hasPaidPurchase(token) {
 
 async function requirePaidAccess(req, res) {
   const token = getAccessToken(req);
-  if (!validAccessToken(token)) {
+  if (!token) {
     res.status(401).json({ error: "Course access is not authorized." });
     return false;
   }
@@ -136,7 +138,7 @@ async function requirePaidAccess(req, res) {
 
 app.get("/success", async (req, res) => {
   const token = getAccessToken(req);
-  if (!validAccessToken(token)) {
+  if (!token) {
     return res.redirect(303, "/");
   }
   if (!supabase) {
@@ -164,19 +166,27 @@ app.get("/api/course-content", async (req, res) => {
   if (!(await requirePaidAccess(req, res))) return;
 
   try {
-    const files = (await fs.readdir(contentDir, { withFileTypes: true }))
+    const entries = (await fs.readdir(contentDir, { withFileTypes: true }))
       .filter((entry) => (
         entry.isFile()
         && !entry.name.startsWith(".")
         && [".pdf", ".mp4"].includes(path.extname(entry.name).toLowerCase())
-      ))
-      .map((entry) => ({
+      ));
+    const files = (await Promise.all(entries.map(async (entry) => {
+      const extension = path.extname(entry.name).toLowerCase();
+      const filePath = path.join(contentDir, entry.name);
+      if (await isGitLfsPointer(filePath)) {
+        console.warn(`Skipping ${entry.name}: Git LFS pointer present instead of file contents.`);
+        return null;
+      }
+      return {
         name: entry.name,
-        type: path.extname(entry.name).toLowerCase() === ".pdf" ? "pdf" : "video",
-        url: path.extname(entry.name).toLowerCase() === ".pdf"
+        type: extension === ".pdf" ? "pdf" : "video",
+        url: extension === ".pdf"
           ? `/api/course-content/${encodeURIComponent(entry.name)}`
           : `/api/course-video/${encodeURIComponent(entry.name)}`,
-      }));
+      };
+    }))).filter(Boolean);
     res.set("Cache-Control", "private, no-store");
     res.json({ files });
   } catch (error) {
@@ -196,8 +206,8 @@ app.get("/api/course-content/:filename", async (req, res) => {
   const filePath = path.join(contentDir, filename);
   try {
     const file = await fs.stat(filePath);
-    if (!file.isFile()) {
-      return res.status(404).send("Course file not found.");
+    if (!file.isFile() || await isGitLfsPointer(filePath)) {
+      return res.status(404).send("Course PDF contents are not available in this deployment.");
     }
 
     res.set("Cache-Control", "private, no-store");
@@ -229,8 +239,8 @@ app.get("/api/course-video/:filename", async (req, res) => {
   const filePath = path.join(contentDir, filename);
   try {
     const file = await fs.stat(filePath);
-    if (!file.isFile()) {
-      return res.status(404).send("Course video not found.");
+    if (!file.isFile() || await isGitLfsPointer(filePath)) {
+      return res.status(404).send("Course video contents are not available in this deployment.");
     }
 
     res.set({
@@ -345,7 +355,6 @@ app.post("/api/verify-payment", async (req, res) => {
     });
   }
 
-  accessTokens.set(accessToken, accessExpiresAt);
   const secureCookie = process.env.NODE_ENV === "production" ? "; Secure" : "";
   res.setHeader(
     "Set-Cookie",
