@@ -12,7 +12,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const contentDir = path.join(appDir, "course-content");
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const hasSupabaseConfig = Boolean(process.env.SUPABASE_URL && supabaseKey);
 const hasRazorpayCredentials = Boolean(
   process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET,
@@ -64,7 +64,7 @@ app.get("/api/razorpay-connection", async (_req, res) => {
 
 app.get("/api/supabase-connection", async (_req, res) => {
   if (!hasSupabaseConfig || !supabase) {
-    return res.status(503).json({ connected: false, error: "Supabase settings are missing on the server." });
+    return res.status(503).json({ connected: false, error: "SUPABASE_URL and the server-only SUPABASE_SERVICE_ROLE_KEY are required." });
   }
 
   const { error } = await supabase.from("course_purchases").select("id").limit(1);
@@ -348,9 +348,17 @@ app.post("/api/verify-payment", async (req, res) => {
       throw error;
     }
   } catch (error) {
-    console.error("Supabase payment save failed:", error);
+    console.error("Supabase payment save failed:", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      status: error.status,
+    });
     return res.status(503).json({
-      verified: true,
+      verified: false,
+      paymentVerified: true,
+      supabaseSaved: false,
       error: "Payment was verified, but course access could not be saved. Please contact support.",
     });
   }

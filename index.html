@@ -444,7 +444,7 @@
               body: JSON.stringify(payment),
             });
             const result = await verifyResponse.json();
-            if (!verifyResponse.ok || !result.verified) throw new Error(result.error || 'Payment verification failed.');
+            if (!verifyResponse.ok || !result.verified || !result.supabaseSaved) throw new Error(result.error || 'Payment confirmation was not saved. Please contact support with your payment ID.');
             window.location.assign(`${API_BASE_URL}/success`);
           } catch (error) {
             showToast(error.message || 'Payment verification failed.');
