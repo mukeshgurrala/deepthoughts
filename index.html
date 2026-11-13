@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Human Nature Stories Studio — Telugu Psychology Reels Course</title>
+<script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+<meta name="description" content="Make Telugu story reels about human psychology with AI. The exact method behind @deepthoughts.telugu1, step by step." />
+<style>
+  /* ============================================================
+     Human Nature Stories Studio — landing page
+     Style: 2px black borders, pill buttons, hard offset shadows
+     (zero blur), no gradients, no soft shadows.
+     Fonts: system stack (original fonts were not provided).
+     ============================================================ */
+  :root{
+    --cream:#fbf3e0;
+    --mustard:#e8a83a;
+    --amber:#c98418;
+    --brown:#5a3a22;
+    --charcoal:#2e2a26;
+    --black:#000000;
+    --white:#ffffff;
+    --border:2px solid var(--black);
+    --shadow-sm:4px 4px 0 var(--black);
+    --shadow-md:6px 6px 0 var(--black);
+    --shadow-lg:9px 9px 0 var(--black);
+    --radius:18px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--brown);
+    font-family:var(--font);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  img,svg{display:block;max-width:100%;}
+  a{color:inherit;}
+  h1,h2,h3{color:var(--charcoal);line-height:1.12;margin:0 0 .5em;font-weight:800;letter-spacing:-.01em;}
+  p{margin:0 0 1em;}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px;}
+  section{padding:64px 0;}
+
+  /* ---------- Buttons (pill, hard shadow) ---------- */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+    padding:.8rem 1.6rem;border:var(--border);border-radius:999px;
+    background:var(--cream);color:var(--charcoal);
+    font-weight:700;font-size:1rem;text-decoration:none;cursor:pointer;
+    box-shadow:var(--shadow-sm);
+    transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
+  }
+  .btn:hover{transform:translate(-2px,-2px);box-shadow:var(--shadow-md);}
+  .btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--black);}
+  .btn-primary{background:var(--mustard);}
+  .btn-primary:hover{background:var(--amber);}
+  .btn-secondary{background:var(--cream);}
+  .btn-dark{background:var(--charcoal);color:var(--cream);}
+  .btn-lg{padding:1rem 2rem;font-size:1.06rem;}
+
+  /* ---------- Nav ---------- */
+  header.nav{
+    position:sticky;top:0;z-index:50;
+    background:var(--cream);border-bottom:var(--border);
+  }
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;max-width:1120px;margin:0 auto;gap:16px;}
+  .logo{font-weight:800;font-size:1.2rem;color:var(--charcoal);text-decoration:none;letter-spacing:-.01em;}
+  .logo .dot{color:var(--amber);}
+
+  /* ---------- Hero ---------- */
+  .hero{padding:72px 0 56px;}
+  .hero-grid{display:grid;grid-template-columns:1fr;gap:48px;align-items:center;max-width:820px;}
+  .badge{
+    display:inline-block;padding:.4rem 1rem;border:var(--border);border-radius:999px;
+    background:var(--cream);color:var(--brown);font-weight:700;font-size:.85rem;
+    box-shadow:var(--shadow-sm);margin-bottom:20px;
+  }
+  .hero h1{font-size:clamp(2.1rem,4.6vw,3.4rem);}
+  .hero p.lead{font-size:1.12rem;max-width:34em;}
+  .hero-actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;}
+  .hero-frame{
+    border:var(--border);border-radius:var(--radius);background:var(--mustard);
+    box-shadow:var(--shadow-lg);padding:28px;display:flex;align-items:center;justify-content:center;
+    aspect-ratio:1/1;
+  }
+  .hero-frame .char{width:100%;height:100%;max-width:320px;max-height:320px;}
+
+  /* ---------- Character placeholder ---------- */
+  .char{width:64px;height:auto;}
+  .char-sm{width:44px;height:auto;flex:0 0 auto;}
+  .heading-row{display:flex;align-items:center;gap:14px;margin-bottom:8px;}
+  .heading-row h2{margin:0;}
+
+  /* ---------- Proof boxes ---------- */
+  .proof{padding:8px 0 40px;}
+  .proof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .stat{
+    border:var(--border);border-radius:var(--radius);background:var(--cream);
+    box-shadow:var(--shadow-md);padding:26px;text-align:center;
+  }
+  .stat .num{font-size:2.4rem;font-weight:800;color:var(--amber);line-height:1;}
+  .stat .lbl{margin-top:8px;font-weight:600;color:var(--brown);}
+
+  /* ---------- Account block ---------- */
+  .account-card{
+    border:var(--border);border-radius:var(--radius);background:var(--cream);
+    box-shadow:var(--shadow-md);padding:32px;display:flex;gap:24px;align-items:center;flex-wrap:wrap;
+  }
+  .account-avatar{
+    width:84px;height:84px;border:var(--border);border-radius:50%;
+    background:var(--mustard);display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+    box-shadow:var(--shadow-sm);
+  }
+  .account-body{flex:1 1 320px;}
+  .account-user{font-weight:800;color:var(--charcoal);font-size:1.15rem;}
+  .account-bio{margin:.4rem 0 0;color:var(--brown);}
+
+  /* ---------- Problem / Solution ---------- */
+  .ps-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .ps-card{border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);padding:30px;}
+  .ps-problem{background:var(--cream);}
+  .ps-solution{background:var(--mustard);}
+  .ps-tag{display:inline-block;font-weight:800;font-size:.8rem;letter-spacing:.04em;text-transform:uppercase;
+    border:var(--border);border-radius:999px;padding:.25rem .8rem;margin-bottom:14px;background:var(--cream);}
+  .ps-solution .ps-tag{background:var(--cream);}
+  .ps-card p{font-size:1.08rem;margin:0;}
+
+  /* ---------- Modules grid ---------- */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .card{
+    border:var(--border);border-radius:var(--radius);background:var(--cream);
+    box-shadow:var(--shadow-md);padding:24px;
+  }
+  .card .step-no{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:38px;height:38px;border:var(--border);border-radius:50%;
+    background:var(--amber);color:var(--cream);font-weight:800;margin-bottom:14px;
+  }
+  .card h3{font-size:1.12rem;margin:0 0 .35em;}
+  .card p{margin:0;color:var(--brown);font-size:.98rem;}
+
+  /* ---------- Topics ---------- */
+  .topics{display:flex;flex-wrap:wrap;gap:14px;}
+  .topic{
+    border:var(--border);border-radius:999px;background:var(--cream);
+    box-shadow:var(--shadow-sm);padding:.7rem 1.4rem;font-weight:700;color:var(--charcoal);
+  }
+
+  /* ---------- How it works (charcoal) ---------- */
+  .dark{background:var(--charcoal);color:var(--cream);}
+  .dark h2,.dark h3{color:var(--cream);}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:8px;}
+  .step{display:flex;flex-direction:column;gap:14px;}
+  .step-circle{
+    width:64px;height:64px;border:2px solid var(--black);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.4rem;color:var(--charcoal);
+    box-shadow:var(--shadow-sm);
+  }
+  .c-mustard{background:var(--mustard);}
+  .c-amber{background:var(--amber);color:var(--cream);}
+  .c-cream{background:var(--cream);}
+  .step p{margin:0;color:var(--cream);font-size:1.05rem;}
+
+  /* ---------- Use cases ---------- */
+  .usecase .card{background:var(--cream);}
+  .usecase .card h3{margin:0;}
+
+  /* ---------- Final CTA (mustard) ---------- */
+  .cta{background:var(--mustard);border-top:var(--border);border-bottom:var(--border);}
+  .cta-inner{text-align:center;max-width:640px;margin:0 auto;}
+  .cta h2{font-size:clamp(1.8rem,3.6vw,2.6rem);}
+  .cta .brand-note{margin-top:18px;font-weight:700;color:var(--brown);font-size:.9rem;}
+
+  /* ---------- Footer (charcoal) ---------- */
+  footer{background:var(--charcoal);color:var(--cream);padding:40px 0;}
+  .footer-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+  .footer-brand{font-weight:800;font-size:1.1rem;color:var(--cream);}
+  .social a{
+    display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;
+    border:2px solid var(--black);border-radius:50%;background:var(--cream);
+    color:var(--brown);box-shadow:var(--shadow-sm);
+    transition:color .12s ease, transform .12s ease, box-shadow .12s ease;
+  }
+  .social a:hover{color:var(--mustard);transform:translate(-2px,-2px);box-shadow:var(--shadow-md);}
+  .social svg{width:22px;height:22px;}
+
+  /* ---------- Section headings ---------- */
+  .section-head{margin-bottom:28px;}
+  .section-head p{max-width:46em;color:var(--brown);}
+  .dark .section-head p{color:var(--cream);}
+
+  /* ---------- Checkout price + trust ---------- */
+  .price-lockup{display:flex;align-items:baseline;gap:10px;margin:24px 0 18px;color:var(--charcoal);flex-wrap:wrap;}
+  .price-lockup strong{font-size:2.2rem;line-height:1;letter-spacing:-.05em;}
+  .price-label{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;background:var(--mustard);border:var(--border);padding:.28rem .58rem;}
+  .price-note{font-size:.9rem;color:var(--brown);font-weight:600;}
+  .connection-check{display:inline-flex;align-items:center;gap:8px;margin-top:14px;border:0;background:transparent;color:var(--brown);font:inherit;font-size:.85rem;font-weight:700;text-decoration:underline;cursor:pointer;padding:4px 0;}
+  .connection-check:hover{color:var(--charcoal);}
+  .connection-check[aria-busy="true"]{opacity:.65;cursor:wait;}
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--charcoal);color:var(--cream);border:var(--border);border-radius:999px;
+    padding:.8rem 1.4rem;font-weight:600;box-shadow:var(--shadow-md);
+    opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;z-index:100;max-width:90vw;text-align:center;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:880px){
+    .hero-grid{grid-template-columns:1fr;}
+    .hero-frame{max-width:420px;margin:0 auto;}
+    .proof-grid,.grid,.steps,.ps-grid{grid-template-columns:1fr;}
+    section{padding:48px 0;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== Navigation ===== -->
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="#top">Human Nature Stories</a>
+    <a class="btn btn-primary" data-buy href="#">Buy the course</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ===== Hero ===== -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="badge">Telugu psychology reels, made with AI</span>
+        <h1>Make Telugu story reels about human psychology with AI</h1>
+        <p class="lead">This is the exact method behind @deepthoughts.telugu1. Topic, script, scenes, voice, and edit, step by step.</p>
+        <div class="price-lockup"><span class="price-label">Launch price</span><strong>₹129</strong><span class="price-note">one-time payment</span></div>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-lg" data-buy href="#">Get the course</a>
+          <a class="btn btn-secondary btn-lg" href="#account">See the account</a>
+        </div>
+        <button class="connection-check" id="connection-check" type="button">Check Razorpay connection</button>
+        <button class="connection-check" id="supabase-check" type="button">Check Supabase connection</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Proof boxes ===== -->
+  <section class="proof" aria-label="Account proof">
+    <div class="wrap proof-grid">
+      <div class="stat"><div class="num">10.9K</div><div class="lbl">followers</div></div>
+      <div class="stat"><div class="num">5.1M</div><div class="lbl">views in the last 30 days</div></div>
+      <div class="stat"><div class="num">23</div><div class="lbl">posts</div></div>
+    </div>
+  </section>
+
+  <!-- ===== See the account (new block, after proof boxes) ===== -->
+  <section id="account">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>See the account</h2>
+      </div>
+      <div class="account-card">
+        <div class="account-body">
+          <div class="account-user">@deepthoughts.telugu1</div>
+          <p class="account-bio">Human psychology in simple stories. Emotions • Relationships • Life lessons. 2D cartoon storytelling in Telugu. Follow to understand people better</p>
+        </div>
+        <a class="btn btn-primary" href="https://instagram.com/deepthoughts.telugu1" target="_blank" rel="noopener">Open on Instagram</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Problem vs Solution ===== -->
+  <section>
+    <div class="wrap">
+      <div class="ps-grid">
+        <div class="ps-card ps-problem">
+          <span class="ps-tag">Problem</span>
+          <p>Creating psychology reels takes hours of scripting, scene planning, and editing.</p>
+        </div>
+        <div class="ps-card ps-solution">
+          <span class="ps-tag">Solution</span>
+          <p>The course shows the full workflow, from one topic to a finished reel.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Course modules ===== -->
+  <section>
+    <div class="wrap">
+      <div class="section-head heading-row">
+        <h2>What's inside the course</h2>
+      </div>
+      <div class="grid">
+        <div class="card"><span class="step-no">1</span><h3>Topic and hook</h3><p>Choose a psychology topic and open with a hook that holds attention.</p></div>
+        <div class="card"><span class="step-no">2</span><h3>Telugu voiceover</h3><p>Write and shape a natural Telugu narration for the story.</p></div>
+        <div class="card"><span class="step-no">3</span><h3>Scene split</h3><p>Break the script into clear scenes that are easy to picture.</p></div>
+        <div class="card"><span class="step-no">4</span><h3>Image prompts in Meta AI</h3><p>Turn each scene into consistent cartoon images with Meta AI.</p></div>
+        <div class="card"><span class="step-no">5</span><h3>Voice in ElevenLabs</h3><p>Generate the voice in ElevenLabs and keep the same voice every video.</p></div>
+        <div class="card"><span class="step-no">6</span><h3>Edit in Instagram Edits</h3><p>Assemble scenes, voice, and timing in Instagram Edits.</p></div>
+        <div class="card"><span class="step-no">7</span><h3>Caption and hashtags</h3><p>Finish with a simple caption and hashtags that fit the story.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Example topics ===== -->
+  <section>
+    <div class="wrap">
+      <div class="section-head heading-row">
+        <h2>Example topics</h2>
+      </div>
+      <div class="topics">
+        <span class="topic">Money and friends</span>
+        <span class="topic">Father's sacrifice</span>
+        <span class="topic">Loyalty</span>
+        <span class="topic">Humanity</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== How it works (charcoal) ===== -->
+  <section class="dark">
+    <div class="wrap">
+      <div class="section-head"><h2>How it works</h2></div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-circle c-mustard">1</div>
+          <p>Pick a topic and hook</p>
+        </div>
+        <div class="step">
+          <div class="step-circle c-amber">2</div>
+          <p>Write and record the Telugu voiceover</p>
+        </div>
+        <div class="step">
+          <div class="step-circle c-cream">3</div>
+          <p>Make scenes, images, voice, and edit</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Use case cards ===== -->
+  <section class="usecase">
+    <div class="wrap">
+      <div class="section-head heading-row">
+        <h2>Who it's for</h2>
+      </div>
+      <div class="grid">
+        <div class="card"><h3>Psychology storytellers</h3><p>Turn ideas about people into simple Telugu stories.</p></div>
+        <div class="card"><h3>Coaches and educators</h3><p>Explain lessons about emotions and relationships in a friendly way.</p></div>
+        <div class="card"><h3>Telugu content creators</h3><p>Add a repeatable story-reel workflow to your content.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Final CTA (mustard) ===== -->
+  <section class="cta">
+    <div class="wrap cta-inner">
+      <h2>Start your first reel this week</h2>
+      <a class="btn btn-dark btn-lg" data-buy href="#">Get the course</a>
+      <div class="brand-note">Human Nature Stories Studio</div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== Footer (charcoal) ===== -->
+<footer>
+  <div class="wrap footer-inner">
+    <div class="footer-brand">Human Nature Stories Studio</div>
+    <div class="social">
+      <a href="https://instagram.com/deepthoughts.telugu1" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+        </svg>
+      </a>
+    </div>
+  </div>
+</footer>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  /*
+   * Razorpay checkout uses only the public Key ID in the browser.
+   * The secret stays in server.js/.env and is never shipped to the client.
+   */
+  const buyButtons = Array.from(document.querySelectorAll('[data-buy]'));
+  const toast = document.getElementById('toast');
+  const connectionCheck = document.getElementById('connection-check');
+  const supabaseCheck = document.getElementById('supabase-check');
+  const API_BASE_URL = window.location.protocol === 'file:' ? 'http://localhost:3000' : '';
+  let toastTimer = null;
+  let checkoutBusy = false;
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 4200);
+  }
+
+  async function startCheckout(event){
+    event.preventDefault();
+    if (checkoutBusy) return;
+    checkoutBusy = true;
+    buyButtons.forEach(btn => {
+      btn.setAttribute('aria-busy', 'true');
+      btn.dataset.originalLabel ||= btn.textContent;
+      btn.textContent = 'Opening checkout…';
+    });
+
+    try {
+      if (!window.Razorpay) throw new Error('Razorpay Checkout could not load. Please refresh and try again.');
+      const response = await fetch(`${API_BASE_URL}/api/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product: 'human-nature-stories-course' }),
+      });
+      const order = await response.json();
+      if (!response.ok || !order.orderId || !order.keyId) throw new Error(order.error || 'Checkout is not configured yet.');
+
+      const razorpay = new Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: order.name,
+        description: order.description,
+        order_id: order.orderId,
+        theme: { color: '#e8a83a', backdrop_color: '#fbf3e0' },
+        modal: { escape: true, backdropclose: false },
+        handler: async function (payment) {
+          try {
+            const verifyResponse = await fetch(`${API_BASE_URL}/api/verify-payment`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payment),
+            });
+            const result = await verifyResponse.json();
+            if (!verifyResponse.ok || !result.verified) throw new Error(result.error || 'Payment verification failed.');
+            window.location.assign(`${API_BASE_URL}/success`);
+          } catch (error) {
+            showToast(error.message || 'Payment verification failed.');
+          }
+        },
+        ondismiss: function () { showToast('Checkout closed. You can try again whenever you are ready.'); },
+      });
+      razorpay.on('payment.failed', () => showToast('Payment did not go through. Please try again.'));
+      razorpay.open();
+    } catch (error) {
+      const message = error instanceof TypeError
+        ? 'Cannot reach the payment server. Run “npm start” and open http://localhost:3000.'
+        : (error.message || 'Unable to start checkout.');
+      showToast(message);
+    } finally {
+      checkoutBusy = false;
+      buyButtons.forEach(btn => {
+        btn.removeAttribute('aria-busy');
+        btn.textContent = btn.dataset.originalLabel || 'Get the course';
+      });
+    }
+  }
+
+  buyButtons.forEach(btn => btn.addEventListener('click', startCheckout));
+
+  connectionCheck?.addEventListener('click', async () => {
+    connectionCheck.setAttribute('aria-busy', 'true');
+    connectionCheck.textContent = 'Checking Razorpay…';
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/razorpay-connection`);
+      const result = await response.json();
+      if (!response.ok || !result.connected) throw new Error(result.error || 'Razorpay is not connected.');
+      showToast(`Razorpay is connected in ${result.mode} mode.`);
+    } catch (error) {
+      const message = error instanceof TypeError
+        ? 'Cannot reach the payment server. Run “npm start” first.'
+        : (error.message || 'Razorpay is not connected.');
+      showToast(message);
+    } finally {
+      connectionCheck.removeAttribute('aria-busy');
+      connectionCheck.textContent = 'Check Razorpay connection';
+    }
+  });
+
+  supabaseCheck?.addEventListener('click', async () => {
+    supabaseCheck.setAttribute('aria-busy', 'true');
+    supabaseCheck.textContent = 'Checking Supabase…';
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/supabase-connection`);
+      const result = await response.json();
+      if (!response.ok || !result.connected) throw new Error(result.error || 'Supabase is not connected.');
+      showToast('Supabase is connected and the payments table is ready.');
+    } catch (error) {
+      const message = error instanceof TypeError
+        ? 'Cannot reach the payment server. Run “npm start” first.'
+        : (error.message || 'Supabase is not connected.');
+      showToast(message);
+    } finally {
+      supabaseCheck.removeAttribute('aria-busy');
+      supabaseCheck.textContent = 'Check Supabase connection';
+    }
+  });
+</script>
+</body>
+</html>
