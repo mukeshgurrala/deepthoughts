@@ -12,18 +12,26 @@ const app = express();
 const port = process.env.PORT || 3000;
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const contentDir = path.join(appDir, "course-content");
-const accessTokens = new Map();
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const hasSupabaseConfig = Boolean(process.env.SUPABASE_URL && supabaseKey);
 const hasRazorpayCredentials = Boolean(
   process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET,
 );
+const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-const required = ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"];
+const required = [
+  "RAZORPAY_KEY_ID",
+  "RAZORPAY_KEY_SECRET",
+  "SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+];
 for (const name of required) {
   if (!process.env[name]) {
-    console.warn(`Missing ${name}. Add it to .env before starting the server.`);
+    console.warn(`Missing ${name}. Add it to the server environment before starting the server.`);
   }
+}
+if (!webhookSecret) {
+  console.warn("Missing RAZORPAY_WEBHOOK_SECRET. Browser checkout callbacks will work, but webhook recovery is disabled.");
 }
 
 const razorpay = hasRazorpayCredentials
@@ -37,7 +45,11 @@ const supabase = hasSupabaseConfig
   : null;
 
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || "*" }));
-app.use(express.json());
+app.use(express.json({
+  verify(req, _res, buffer) {
+    req.rawBody = Buffer.from(buffer);
+  },
+}));
 app.get("/", (_req, res) => res.sendFile(path.join(appDir, "index.html")));
 
 app.get("/api/health", (_req, res) => {
@@ -45,6 +57,7 @@ app.get("/api/health", (_req, res) => {
     ok: true,
     razorpayConfigured: hasRazorpayCredentials,
     supabaseConfigured: hasSupabaseConfig,
+    razorpayWebhookConfigured: Boolean(webhookSecret),
     priceInr: Number(process.env.COURSE_PRICE_INR || 129),
   });
 });
@@ -65,7 +78,7 @@ app.get("/api/razorpay-connection", async (_req, res) => {
 
 app.get("/api/supabase-connection", async (_req, res) => {
   if (!hasSupabaseConfig || !supabase) {
-    return res.status(503).json({ connected: false, error: "Supabase settings are missing on the server." });
+    return res.status(503).json({ connected: false, error: "SUPABASE_URL and the server-only SUPABASE_SERVICE_ROLE_KEY are required." });
   }
 
   const { error } = await supabase.from("course_purchases").select("id").limit(1);
@@ -76,21 +89,39 @@ app.get("/api/supabase-connection", async (_req, res) => {
   res.json({ connected: true });
 });
 
-function validAccessToken(token) {
-  const expiresAt = accessTokens.get(token);
-  if (!expiresAt || expiresAt < Date.now()) {
-    accessTokens.delete(token);
-    return false;
-  }
-  return true;
-}
-
 function getAccessToken(req) {
   const cookie = (req.get("cookie") || "")
     .split(";")
     .map((part) => part.trim())
     .find((part) => part.startsWith("course_access="));
   return cookie ? cookie.slice("course_access=".length) : "";
+}
+
+function setAccessCookie(res, token, maxAgeSeconds) {
+  const secureCookie = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  res.setHeader(
+    "Set-Cookie",
+    `course_access=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAgeSeconds}${secureCookie}`,
+  );
+}
+
+function validHmacHex(expected, received) {
+  if (typeof received !== "string" || !/^[a-f0-9]+$/i.test(received) || expected.length !== received.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(received, "hex"));
+}
+
+async function isGitLfsPointer(filePath) {
+  const handle = await fs.open(filePath, "r");
+  try {
+    const buffer = Buffer.alloc(256);
+    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+    return buffer.subarray(0, bytesRead).toString("utf8")
+      .startsWith("version https://git-lfs.github.com/spec/v1\n");
+  } finally {
+    await handle.close();
+  }
 }
 
 async function hasPaidPurchase(token) {
@@ -111,7 +142,7 @@ async function hasPaidPurchase(token) {
 
 async function requirePaidAccess(req, res) {
   const token = getAccessToken(req);
-  if (!validAccessToken(token)) {
+  if (!token) {
     res.status(401).json({ error: "Course access is not authorized." });
     return false;
   }
@@ -136,7 +167,7 @@ async function requirePaidAccess(req, res) {
 
 app.get("/success", async (req, res) => {
   const token = getAccessToken(req);
-  if (!validAccessToken(token)) {
+  if (!token) {
     return res.redirect(303, "/");
   }
   if (!supabase) {
@@ -164,19 +195,27 @@ app.get("/api/course-content", async (req, res) => {
   if (!(await requirePaidAccess(req, res))) return;
 
   try {
-    const files = (await fs.readdir(contentDir, { withFileTypes: true }))
+    const entries = (await fs.readdir(contentDir, { withFileTypes: true }))
       .filter((entry) => (
         entry.isFile()
         && !entry.name.startsWith(".")
         && [".pdf", ".mp4"].includes(path.extname(entry.name).toLowerCase())
-      ))
-      .map((entry) => ({
+      ));
+    const files = (await Promise.all(entries.map(async (entry) => {
+      const extension = path.extname(entry.name).toLowerCase();
+      const filePath = path.join(contentDir, entry.name);
+      if (await isGitLfsPointer(filePath)) {
+        console.warn(`Skipping ${entry.name}: Git LFS pointer present instead of file contents.`);
+        return null;
+      }
+      return {
         name: entry.name,
-        type: path.extname(entry.name).toLowerCase() === ".pdf" ? "pdf" : "video",
-        url: path.extname(entry.name).toLowerCase() === ".pdf"
+        type: extension === ".pdf" ? "pdf" : "video",
+        url: extension === ".pdf"
           ? `/api/course-content/${encodeURIComponent(entry.name)}`
           : `/api/course-video/${encodeURIComponent(entry.name)}`,
-      }));
+      };
+    }))).filter(Boolean);
     res.set("Cache-Control", "private, no-store");
     res.json({ files });
   } catch (error) {
@@ -196,8 +235,8 @@ app.get("/api/course-content/:filename", async (req, res) => {
   const filePath = path.join(contentDir, filename);
   try {
     const file = await fs.stat(filePath);
-    if (!file.isFile()) {
-      return res.status(404).send("Course file not found.");
+    if (!file.isFile() || await isGitLfsPointer(filePath)) {
+      return res.status(404).send("Course PDF contents are not available in this deployment.");
     }
 
     res.set("Cache-Control", "private, no-store");
@@ -229,8 +268,8 @@ app.get("/api/course-video/:filename", async (req, res) => {
   const filePath = path.join(contentDir, filename);
   try {
     const file = await fs.stat(filePath);
-    if (!file.isFile()) {
-      return res.status(404).send("Course video not found.");
+    if (!file.isFile() || await isGitLfsPointer(filePath)) {
+      return res.status(404).send("Course video contents are not available in this deployment.");
     }
 
     res.set({
@@ -269,13 +308,38 @@ app.post("/api/create-order", async (req, res) => {
       return res.status(500).json({ error: "Course price is not configured." });
     }
 
+    const amountPaise = Math.round(amountInr * 100);
     const order = await razorpay.orders.create({
-      amount: Math.round(amountInr * 100),
+      amount: amountPaise,
       currency: "INR",
       receipt: `course_${Date.now()}`.slice(0, 40),
       notes: { product: "Human Nature Stories Studio course" },
     });
 
+    const accessToken = crypto.randomUUID();
+    const accessTokenHash = crypto.createHash("sha256").update(accessToken).digest("hex");
+    const pendingExpiresAt = Date.now() + 48 * 60 * 60 * 1000;
+    const { error: saveError } = await supabase.from("course_purchases").insert({
+      razorpay_order_id: order.id,
+      razorpay_payment_id: null,
+      amount_paise: amountPaise,
+      currency: "INR",
+      status: "pending",
+      access_token_hash: accessTokenHash,
+      access_expires_at: new Date(pendingExpiresAt).toISOString(),
+    });
+    if (saveError) {
+      console.error("Supabase pending order save failed:", {
+        code: saveError.code,
+        message: saveError.message,
+        details: saveError.details,
+        hint: saveError.hint,
+        status: saveError.status,
+      });
+      return res.status(503).json({ error: "Could not prepare course access. Checkout was not started." });
+    }
+
+    setAccessCookie(res, accessToken, 48 * 60 * 60);
     res.json({
       orderId: order.id,
       amount: order.amount,
@@ -309,50 +373,121 @@ app.post("/api/verify-payment", async (req, res) => {
     .update(payload)
     .digest("hex");
 
-  if (expectedSignature.length !== razorpay_signature.length) {
-    return res.status(400).json({ verified: false, error: "Payment verification failed." });
-  }
-
-  const verified = crypto.timingSafeEqual(
-    Buffer.from(expectedSignature),
-    Buffer.from(razorpay_signature),
-  );
+  const verified = validHmacHex(expectedSignature, razorpay_signature);
 
   if (!verified) {
     return res.status(400).json({ verified: false, error: "Payment verification failed." });
   }
 
-  const accessToken = crypto.randomUUID();
+  const accessToken = getAccessToken(req);
+  if (!accessToken) {
+    return res.status(401).json({ verified: false, paymentVerified: true, error: "Buyer session is missing. Contact support with your payment ID." });
+  }
+  const accessTokenHash = crypto.createHash("sha256").update(accessToken).digest("hex");
   const accessExpiresAt = Date.now() + 24 * 60 * 60 * 1000;
 
-  const accessTokenHash = crypto.createHash("sha256").update(accessToken).digest("hex");
   try {
-    const { error } = await supabase.from("course_purchases").upsert({
-      razorpay_order_id,
+    const { data, error } = await supabase.from("course_purchases").update({
       razorpay_payment_id,
-      access_token_hash: accessTokenHash,
       access_expires_at: new Date(accessExpiresAt).toISOString(),
       status: "paid",
-    }, { onConflict: "razorpay_payment_id" });
+    })
+      .eq("razorpay_order_id", razorpay_order_id)
+      .eq("access_token_hash", accessTokenHash)
+      .select("razorpay_payment_id")
+      .maybeSingle();
     if (error) {
       throw error;
     }
+    if (!data) {
+      throw new Error("No matching pending course order was found for this buyer session.");
+    }
   } catch (error) {
-    console.error("Supabase payment save failed:", error);
+    console.error("Supabase payment save failed:", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      status: error.status,
+    });
     return res.status(503).json({
-      verified: true,
+      verified: false,
+      paymentVerified: true,
+      supabaseSaved: false,
       error: "Payment was verified, but course access could not be saved. Please contact support.",
     });
   }
 
-  accessTokens.set(accessToken, accessExpiresAt);
-  const secureCookie = process.env.NODE_ENV === "production" ? "; Secure" : "";
-  res.setHeader(
-    "Set-Cookie",
-    `course_access=${accessToken}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400${secureCookie}`,
-  );
+  setAccessCookie(res, accessToken, 24 * 60 * 60);
   res.set("Cache-Control", "no-store");
   res.json({ verified: true, paymentId: razorpay_payment_id, supabaseSaved: true });
+});
+
+app.post("/api/razorpay-webhook", async (req, res) => {
+  if (!webhookSecret) {
+    return res.status(503).json({ error: "RAZORPAY_WEBHOOK_SECRET is not configured." });
+  }
+  if (!supabase) {
+    return res.status(503).json({ error: "Supabase is not configured for payment fulfillment." });
+  }
+
+  const signature = req.get("x-razorpay-signature") || "";
+  const expectedSignature = crypto
+    .createHmac("sha256", webhookSecret)
+    .update(req.rawBody || Buffer.alloc(0))
+    .digest("hex");
+  if (!validHmacHex(expectedSignature, signature)) {
+    return res.status(400).json({ error: "Invalid Razorpay webhook signature." });
+  }
+
+  if (req.body?.event !== "payment.captured") {
+    return res.status(200).json({ received: true, ignored: true });
+  }
+
+  const payment = req.body?.payload?.payment?.entity;
+  if (payment?.status !== "captured" || !payment.id || !payment.order_id || !Number.isInteger(payment.amount) || !payment.currency) {
+    return res.status(400).json({ error: "Razorpay captured-payment payload is incomplete." });
+  }
+
+  try {
+    const { data: pendingOrder, error: lookupError } = await supabase
+      .from("course_purchases")
+      .select("amount_paise, currency")
+      .eq("razorpay_order_id", payment.order_id)
+      .maybeSingle();
+    if (lookupError) throw lookupError;
+    if (!pendingOrder) {
+      console.error("Razorpay webhook has no matching pending course order:", payment.order_id);
+      return res.status(500).json({ error: "Matching course order is not ready; retry webhook delivery." });
+    }
+    if (pendingOrder.amount_paise !== payment.amount || pendingOrder.currency !== payment.currency) {
+      console.error("Razorpay webhook amount/currency does not match course order:", payment.order_id);
+      return res.status(400).json({ error: "Captured payment does not match the stored course order." });
+    }
+
+    const { data, error } = await supabase.from("course_purchases").update({
+      razorpay_payment_id: payment.id,
+      status: "paid",
+      access_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    })
+      .eq("razorpay_order_id", payment.order_id)
+      .select("id")
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      return res.status(500).json({ error: "Course purchase confirmation could not be saved; retry webhook delivery." });
+    }
+    return res.status(200).json({ received: true, saved: true });
+  } catch (error) {
+    console.error("Razorpay webhook purchase save failed:", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      status: error.status,
+    });
+    return res.status(500).json({ error: "Could not persist captured payment; retry webhook delivery." });
+  }
 });
 
 app.listen(port, () => {
